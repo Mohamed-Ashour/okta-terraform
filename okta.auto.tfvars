@@ -1,0 +1,7 @@
+okta_org_name        = "dev-90640674"
+okta_base_url        = "okta.com"
+okta_api_token       = "00n88YckEthsopbVmnqDLdVubKCntDWB_k9gNN-o-X"
+google_client_id     = "455763988753-gnhuo78tmtpqecdot2ufapsjkhiemccc.apps.googleusercontent.com"
+google_client_secret = "Wm45-AMAdyxWQWTgXKFJ2QDk"
+login_redirect_url   = "http://localhost:8080/login/callback"
+logout_redirect_url  = "http://localhost:8080"
