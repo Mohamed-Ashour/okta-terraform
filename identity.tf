@@ -3,8 +3,8 @@ variable "okta_base_url" {}
 variable "okta_api_token" {}
 variable "google_client_id" {}
 variable "google_client_secret" {}
-variable "login_redirect_url" {}
-variable "logout_redirect_url" {}
+variable "login_redirect_urls" {}
+variable "logout_redirect_urls" {}
 
 terraform {
   required_providers {
@@ -22,7 +22,7 @@ provider "okta" {
 }
 
 
-# groups
+# Groups
 
 resource "okta_group" "collection_team" {
   name        = "Collection_Team"
@@ -45,11 +45,12 @@ resource "okta_group" "collection_guests" {
 }
 
 
-# groups roles
+# Groups roles
 
 resource "okta_group_role" "collection_administrators" {
-  group_id  = okta_group.collection_administrators.id
-  role_type = "USER_ADMIN"
+  group_id          = okta_group.collection_administrators.id
+  role_type         = "USER_ADMIN"
+  target_group_list = [okta_group.collection_administrators.id, okta_group.collection_line_managers.id, okta_group.collection_team.id, okta_group.collection_guests.id]
 }
 
 resource "okta_group_role" "collection_line_managers" {
@@ -59,21 +60,21 @@ resource "okta_group_role" "collection_line_managers" {
 }
 
 
-# application
+# Oauth application
 
 resource "okta_app_oauth" "collection_app" {
   label                      = "Collection app"
   type                       = "browser"
-  redirect_uris              = [var.login_redirect_url]
-  post_logout_redirect_uris  = [var.logout_redirect_url]
+  redirect_uris              = var.login_redirect_urls
+  post_logout_redirect_uris  = var.logout_redirect_urls
   groups                     = [okta_group.collection_administrators.id, okta_group.collection_line_managers.id, okta_group.collection_team.id, okta_group.collection_guests.id]
   response_types             = ["code"]
-  grant_types                = ["authorization_code", "refresh_token"] # enable token rotation feature
+  grant_types                = ["authorization_code"] # enable Refresh Token (token rotation feature) from ui
   token_endpoint_auth_method = "none"
 }
 
 
-# google idp
+# Google identity provider
 
 resource "okta_idp_social" "google" {
   type                = "GOOGLE"
@@ -88,54 +89,125 @@ resource "okta_idp_social" "google" {
 }
 
 
-# user custom type
+# Collection user type
 
 resource "okta_user_type" "collection_user" {
-  name   = "collection_user"
-  display_name = "Collection App User"
-  description = "Collection App User"
+  name         = "collection_user"
+  display_name = "Collection User"
+  description  = "Collection User"
 }
 
 
-# user custom properties
+# Collection user custom properties
 
 resource "okta_user_schema" "squad" {
-  index       = "squad"
-  title       = "Squad"
-  type        = "string"
-  scope       = "SELF"
+  user_type = okta_user_type.collection_user.id
+  index     = "squad"
+  title     = "Squad"
+  type      = "string"
+  scope     = "SELF"
+}
+
+resource "okta_user_schema" "target" {
+  user_type = okta_user_type.collection_user.id
+  index     = "target"
+  title     = "Target"
+  type      = "string"
+  scope     = "SELF"
 }
 
 resource "okta_user_schema" "joiningDate" {
-  index       = "joiningDate"
-  title       = "Joining Date"
-  type        = "string"
-  scope       = "SELF"
+  user_type = okta_user_type.collection_user.id
+  index     = "joiningDate"
+  title     = "Joining Date"
+  type      = "string"
+  scope     = "SELF"
 }
 
 resource "okta_user_schema" "leaveDate" {
-  index       = "leaveDate"
-  title       = "Leave Date"
-  type        = "string"
-  scope       = "SELF"
+  user_type = okta_user_type.collection_user.id
+  index     = "leaveDate"
+  title     = "Leave Date"
+  type      = "string"
+  scope     = "SELF"
 }
 
 resource "okta_user_schema" "employmentType" {
-  index       = "employmentType"
-  title       = "Employment type"
-  type        = "string"
-  scope       = "SELF"
+  user_type = okta_user_type.collection_user.id
+  index     = "employmentType"
+  title     = "Employment type"
+  type      = "string"
+  scope     = "SELF"
 }
 
 
-# application user properties
-# (mapping needed from custom user profile to app profile)
+# Collection application user custom properties
 
-resource "okta_app_user_schema" "example" {
-  app_id      = okta_app_oauth.collection_app.id
-  index       = "customPropertyName"
-  title       = "customPropertyName"
-  type        = "string"
-  description = "My custom property name"
-  scope       = "SELF"
+resource "okta_app_user_schema" "squad" {
+  app_id = okta_app_oauth.collection_app.id
+  index  = "squad"
+  title  = "Squad"
+  type   = "string"
+  scope  = "SELF"
 }
+
+resource "okta_app_user_schema" "target" {
+  app_id = okta_app_oauth.collection_app.id
+  index  = "target"
+  title  = "Target"
+  type   = "string"
+  scope  = "SELF"
+}
+
+resource "okta_app_user_schema" "joiningDate" {
+  app_id = okta_app_oauth.collection_app.id
+  index  = "joiningDate"
+  title  = "Joining Date"
+  type   = "string"
+  scope  = "SELF"
+}
+
+resource "okta_app_user_schema" "leaveDate" {
+  app_id = okta_app_oauth.collection_app.id
+  index  = "leaveDate"
+  title  = "Leave Date"
+  type   = "string"
+  scope  = "SELF"
+}
+
+resource "okta_app_user_schema" "employmentType" {
+  app_id = okta_app_oauth.collection_app.id
+  index  = "employmentType"
+  title  = "Employment type"
+  type   = "string"
+  scope  = "SELF"
+}
+
+# This is not working on dev organization
+# Mapping Collection user properties to Collection app user properties
+
+# resource "okta_profile_mapping" "collection_app" {
+#   source_id = okta_user_type.collection_user.id
+#   target_id = okta_app_oauth.collection_app.id
+
+#   mappings {
+#     id         = "employmentType"
+#     expression = "user.employmentType"
+#   }
+#   mappings {
+#     id         = "joiningDate"
+#     expression = "user.joiningDate"
+#   }
+#   mappings {
+#     id         = "leaveDate"
+#     expression = "user.leaveDate"
+#   }
+#   mappings {
+#     id         = "joiningDate"
+#     expression = "user.joiningDate"
+#   }
+#   mappings {
+#     id         = "squad"
+#     expression = "user.squad"
+#   }
+# }
