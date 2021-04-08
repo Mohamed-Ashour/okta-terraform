@@ -99,6 +99,7 @@ resource "okta_user_type" "collection_user" {
 
 
 # Collection user custom properties
+# https://support.okta.com/help/s/article/How-to-add-custom-attributes-of-user-profile-as-claims-in-token?language=en_US
 
 resource "okta_user_schema" "squad" {
   user_type = okta_user_type.collection_user.id
