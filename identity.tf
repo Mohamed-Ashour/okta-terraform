@@ -55,7 +55,7 @@ resource "okta_group_role" "collection_administrators" {
 
 resource "okta_group_role" "collection_line_managers" {
   group_id          = okta_group.collection_line_managers.id
-  role_type         = "GROUP_MEMBERSHIP_ADMIN"
+  role_type         = "USER_ADMIN"
   target_group_list = [okta_group.collection_team.id, okta_group.collection_guests.id]
 }
 
