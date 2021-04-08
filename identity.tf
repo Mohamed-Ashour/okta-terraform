@@ -85,7 +85,7 @@ resource "okta_idp_social" "google" {
   client_secret       = var.google_client_secret
   username_template   = "idpuser.email"
   subject_match_type  = "USERNAME"
-  provisioning_action = "AUTO"
+  provisioning_action = "DISABLED"
 }
 
 
